@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Locacao;
-use App\Http\Requests\StoreLocacaoRequest;
-use App\Http\Requests\UpdateLocacaoRequest;
+use Illuminate\Http\Request;
+use App\Repositories\LocacaoRepository;
 
 class LocacaoController extends Controller
 {
@@ -20,13 +20,6 @@ class LocacaoController extends Controller
     public function index(Request $request)
     {
         $locacaoRepository = new LocacaoRepository($this->locacao);
-
-        if($request->has('atributos_modelos')) {
-            $atributos_modelos = 'modelos:id,'.$request->atributos_modelos;
-            $locacaoRepository->selectAtributosRegistrosRelacionados($atributos_modelos);
-        } else {
-            $locacaoRepository->selectAtributosRegistrosRelacionados('modelos');
-        }
 
         if ($request->has('filtro')) {
            $locacaoRepository->filtro($request->filtro);
@@ -58,11 +51,16 @@ class LocacaoController extends Controller
      */
     public function store(Request $request)
     {
-        /$request->validate($this->locacao->rules(), $this->locacao->feedback());
-        //stateless
-    
+        $request->validate($this->locacao->rules());
+     
         $locacao = $this->locacao->create([
-            'nome' => $request->nome,
+            'cliente_id' => $request->cliente_id,
+            'carro_id' => $request->carro_id,
+            'data_inicio_periodo' =>$request->data_inicio_periodo,
+            'data_final_previsto_periodo' => $request->data_final_previsto_periodo,
+            'valor_diaria' => $request->valor_diaria,
+            'km_inicial' => $request->km_inicial,
+            'km_final' => $request->km_final
            
         ]);
 
@@ -78,14 +76,14 @@ class LocacaoController extends Controller
      */
     public function show($id)
     {
-        $locacao = $this->locacao->with('modelos')->find($id);
+        $locacao = $this->locacao->find($id);
         if ($locacao === null)  //se é identico
         {
             return response()->json(['error' => 'locacao não encontrada'], 404);
         }
 
-        return $locacao;
-    }
+        return response()->json($locacao, 200);
+    
     }
 
     /**
@@ -106,7 +104,7 @@ class LocacaoController extends Controller
      * @param  \App\Models\Locacao  $locacao
      * @return \Illuminate\Http\Response
      */
-    public function update($request, Locacao $id)
+    public function update(Request, $request, $id)
     {
         $locacao = $this->locacao->find($id);
 
