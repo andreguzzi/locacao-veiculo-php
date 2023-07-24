@@ -45,7 +45,7 @@
                         <table-component></table-component>
                     </template>
                     <template v-slot:rodape>
-                        <button type="submit" class="btn btn-primary btn-sm ms-auto" data-toggle="modal"
+                        <button type="button" class="btn btn-primary btn-sm ms-auto" data-toggle="modal"
                             data-target="#modalMarca">Adicionar</button>
                     </template>
                 </card-component>
