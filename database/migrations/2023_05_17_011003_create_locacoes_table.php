@@ -30,6 +30,7 @@ class CreateLocacoesTable extends Migration
             $table->foreign('carro_id')->references('id')->on('carros');
         });
     }
+
     /**
      * Reverse the migrations.
      *
