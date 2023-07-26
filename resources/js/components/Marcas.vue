@@ -20,23 +20,18 @@
                             <div class="col mb-3">
 
                                 <input-container-component titulo="Nome da marca" id="inputNome" id-help="nomeHelp"
-                                    texto-ajuda="Opcional. Informe o Nome da marca">
+                                    texto-ajuda="Informe o Nome da marca">
                                     <input type="text" class="form-control" id="inputNome" aria-describedby="nomeHelp"
                                         placeholder="Nome da marca">
                                 </input-container-component>
-
                             </div>
                         </div>
-
                     </template>
-
 
                     <template v-slot:rodape>
                         <button type="submit" class="btn btn-primary btn-sm ms-auto">Pesquisar</button>
-
                     </template>
                 </card-component>
-
                 <!-- fim do card de busca-->
 
                 <!-- inicio do card de listagem de marcas -->
@@ -45,44 +40,98 @@
                         <table-component></table-component>
                     </template>
                     <template v-slot:rodape>
-                        <button type="button" class="btn btn-primary btn-sm ms-auto" data-toggle="modal"
-                            data-target="#modalMarca">Adicionar</button>
+                        <button type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal"
+                            data-bs-target="#modalMarca">Adicionar</button>
                     </template>
                 </card-component>
                 <!-- fim do card de listagem de marcas -->
-
             </div>
         </div>
 
         <modal-component id="modalMarca" titulo="Adicionar marca">
+            <template v-slot:alertas>
+                <alert-component tipo="success"></alert-component>
+                <alert-component tipo="danger"></alert-component>
+            </template>
             <template v-slot:conteudo>
                 <div class="form-group">
                     <input-container-component titulo="Nome da marca" id="novoNome" id-help="novoNomeHelp"
                         texto-ajuda="Informe o Nome da marca">
                         <input type="text" class="form-control" id="novoNome" aria-describedby="novoNomeHelp"
-                            placeholder="Nome da marca">
+                            placeholder="Nome da marca" v-model="nomeMarca">
                     </input-container-component>
+                    {{ nomeMarca }}
                 </div>
 
                 <div class="form-group">
                     <input-container-component titulo="imagem" id="novaImagem" id-help="novaImagemHelp"
                         texto-ajuda="Selecione uma imagem no formato PNG">
                         <input type="file" class="form-control-file" id="novaImagem" aria-describedby="novaImagemHelp"
-                            placeholder="Selecione uma imagem">
+                            placeholder="Selecione uma imagem" @change="carregarImagem($event)">
                     </input-container-component>
+                    {{ arquivoImagem }}
                 </div>
             </template>
 
             <template v-slot:rodape>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-                <button type="button" class="btn btn-primary">Salvar</button>
+                <button type="button" class="btn btn-primary" @click="salvar()">Salvar</button>
             </template>
-
         </modal-component>
-
     </div>
 </template>
 
 <script>
+export default {
+    computed:{
+            token() {
 
+                let token = document.cookie.split(';').find(indice => {
+                    return indice, indice.includes('token=')
+                })
+
+                token = token.split('=')[1]
+                token = 'Berear ' + token
+
+                return token
+            }
+        },
+    data() {
+        return {
+            urlBase: 'http://localhost:8000/api/v1/marca',
+            nomeMarca: '',
+            arquivoImagem: []
+        }
+    },
+    methods: {
+
+        carregarImagem(e) {
+            this.arquivoImagem = e.target.files
+
+        },
+        salvar() {
+            console.log(this.nomeMarca, this.arquivoImagem[0])
+
+            let formData = new FormData();
+            formData.append('nome', this.nomeMarca)
+            formData.append('imagem', this.arquivoImagem[0])//0 para unica imagem, se for mais retira o [0]
+
+            let config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Accept': 'application/json',
+                    'Authorization': this.token
+                }
+            }
+            axios.post(this.urlBase, formData, config)
+                .then(response => {
+                    console.log(response)
+                })
+                .catch(errors => {
+                    console.log(errors)
+                })
+        }
+    }
+}
 </script>
+
