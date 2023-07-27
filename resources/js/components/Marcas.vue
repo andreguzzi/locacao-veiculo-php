@@ -37,7 +37,10 @@
                 <!-- inicio do card de listagem de marcas -->
                 <card-component titulo="Relação de marcas">
                     <template v-slot:conteudo>
-                        <table-component></table-component>
+                        <table-component
+                            :dados="marcas"
+                            :titulos="['ID','Nome','imagem']"
+                            ></table-component>
                     </template>
                     <template v-slot:rodape>
                         <button type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal"
@@ -50,8 +53,8 @@
 
         <modal-component id="modalMarca" titulo="Adicionar marca">
             <template v-slot:alertas>
-                <alert-component tipo="success"></alert-component>
-                <alert-component tipo="danger"></alert-component>
+                <alert-component tipo="success" :detalhes="transacaoDetalhes" titulo="Cadastro realizado com sucesso" v-if="transacaoStatus == 'adicionado'"></alert-component>
+                <alert-component tipo="danger" :detalhes="transacaoDetalhes" titulo="Erro ao cadastrar a Marca" v-if="transacaoStatus == 'erro'"></alert-component>
             </template>
             <template v-slot:conteudo>
                 <div class="form-group">
@@ -100,11 +103,32 @@ export default {
         return {
             urlBase: 'http://localhost:8000/api/v1/marca',
             nomeMarca: '',
-            arquivoImagem: []
+            arquivoImagem: [],
+            transacaoStatus: '',
+            transacaoDetalhes: {},
+            marcas: []
         }
     },
     methods: {
+        carregarLista() {
 
+            let config = {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': this.token
+                }
+            }
+
+
+            axios.get(this.urlBase)
+                .then(response => {
+                    this.marcas = response.data
+                    //console.log(this.marcas)
+                })
+                .catch(errors => {
+                    console.log(errors);
+                })
+        },
         carregarImagem(e) {
             this.arquivoImagem = e.target.files
 
@@ -125,13 +149,27 @@ export default {
             }
             axios.post(this.urlBase, formData, config)
                 .then(response => {
+                    this.transacaoStatus = 'adicionado'
+                    this.transacaoDetalhes = {
+                        mensagem: 'ID do registro: ' + detalhes.data.id
+                    }
+
                     console.log(response)
                 })
                 .catch(errors => {
-                    console.log(errors)
+                    this.transacaoStatus = 'erro'
+                    this.transacaoDetalhes = {
+                        mensagem: errors.response.data.message,
+                        dados: errors.response.data.errors
+                    }
+                    //errors.response.data.message
                 })
         }
+    },
+    mounted() {
+        this.carregarLista()
     }
+
 }
 </script>
 
