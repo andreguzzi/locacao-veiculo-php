@@ -13,7 +13,7 @@
                                 <input-container-component titulo="ID" id="inputId" id-help="idHelp"
                                     texto-ajuda="Opcional. Informe o ID da marca">
                                     <input type="number" class="form-control" id="inputId" aria-describedby="idHelp"
-                                        placeholder="ID">
+                                        placeholder="ID" v-model="busca.id">
                                 </input-container-component>
 
                             </div>
@@ -22,14 +22,14 @@
                                 <input-container-component titulo="Nome da marca" id="inputNome" id-help="nomeHelp"
                                     texto-ajuda="Informe o Nome da marca">
                                     <input type="text" class="form-control" id="inputNome" aria-describedby="nomeHelp"
-                                        placeholder="Nome da marca">
+                                        placeholder="Nome da marca" v-model="busca.nome">
                                 </input-container-component>
                             </div>
                         </div>
                     </template>
 
                     <template v-slot:rodape>
-                        <button type="submit" class="btn btn-primary btn-sm ms-auto">Pesquisar</button>
+                        <button type="submit" class="btn btn-primary btn-sm float-end" @click="pesquisar()">Pesquisar</button>
                     </template>
                 </card-component>
                 <!-- fim do card de busca-->
@@ -38,23 +38,49 @@
                 <card-component titulo="Relação de marcas">
                     <template v-slot:conteudo>
                         <table-component
-                            :dados="marcas"
-                            :titulos="['ID','Nome','imagem']"
-                            ></table-component>
+                            :dados="marcas.data"
+                            :visualizar="{visivel: true, dataBsToggle: 'modal', dataBsTarget: '#modalMarcaVisualizar'}"
+                            :atualizar="true"
+                            :remover="true"
+                            :titulos="{
+                            id: { titulo: 'ID', tipo: 'texto' },
+                            nome: { titulo: 'Nome', tipo: 'texto' },
+                            imagem: { titulo: 'Imagem', tipo: 'imagem' },
+                            created_at: { titulo: 'Criação', tipo: 'data' },
+                        }"></table-component>
                     </template>
                     <template v-slot:rodape>
-                        <button type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal"
-                            data-bs-target="#modalMarca">Adicionar</button>
+                        <div class="row g-2">
+                            <div class="col-9">
+                                <paginate-component>
+                                    <li v-for="l, key in marcas.links" :key="key"
+                                        :class="l.active ? 'page-item active' : 'page-item'"
+                                        @click="paginacao(l)"
+                                    >
+                                        <a class="page-link" v-html="l.label"></a>
+                                    </li>
+                                </paginate-component>
+                            </div>
+
+                            <div class="col">
+                                <button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal"
+                                    data-bs-target="#modalMarca">Adicionar</button>
+                            </div>
+
+                        </div>
                     </template>
                 </card-component>
                 <!-- fim do card de listagem de marcas -->
             </div>
         </div>
 
+        <!-- Inicio do modal de inclusão de marca-->
         <modal-component id="modalMarca" titulo="Adicionar marca">
             <template v-slot:alertas>
-                <alert-component tipo="success" :detalhes="transacaoDetalhes" titulo="Cadastro realizado com sucesso" v-if="transacaoStatus == 'adicionado'"></alert-component>
-                <alert-component tipo="danger" :detalhes="transacaoDetalhes" titulo="Erro ao cadastrar a Marca" v-if="transacaoStatus == 'erro'"></alert-component>
+                <alert-component tipo="success" :detalhes="transacaoDetalhes" titulo="Cadastro realizado com sucesso"
+                    v-if="transacaoStatus == 'adicionado'"></alert-component>
+                <alert-component tipo="danger" :detalhes="transacaoDetalhes" titulo="Erro ao cadastrar a Marca"
+                    v-if="transacaoStatus == 'erro'"></alert-component>
             </template>
             <template v-slot:conteudo>
                 <div class="form-group">
@@ -81,35 +107,79 @@
                 <button type="button" class="btn btn-primary" @click="salvar()">Salvar</button>
             </template>
         </modal-component>
+        <!-- fim do modal de inclusão de marca-->
+
+        <!-- Inicio do modal de visualização de marca-->
+        <modal-component id="modalMarcaVisualizar" titulo="Visualizar marca">
+            <template v-slot:alertas></template>
+            <template v-slot:conteudo>
+                teste
+            </template>
+            <template v-slot:rodape>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+            </template>
+        </modal-component>
+        <!-- fim do modal de visualização de marca-->
     </div>
 </template>
 
 <script>
 export default {
-    computed:{
-            token() {
+    computed: {
+        token() {
 
-                let token = document.cookie.split(';').find(indice => {
-                    return indice, indice.includes('token=')
-                })
+            let token = document.cookie.split(';').find(indice => {
+                return indice, indice.includes('token=')
+            })
 
-                token = token.split('=')[1]
-                token = 'Berear ' + token
+            token = token.split('=')[1]
+            token = 'Berear ' + token
 
-                return token
-            }
-        },
+            return token
+        }
+    },
     data() {
         return {
             urlBase: 'http://localhost:8000/api/v1/marca',
+            urlPaginacao: '',
+            urlFiltro: '',
             nomeMarca: '',
             arquivoImagem: [],
             transacaoStatus: '',
             transacaoDetalhes: {},
-            marcas: []
+            marcas: { data: [] },
+            busca: { id: '', nome: ''}
         }
     },
     methods: {
+        pesquisar() {
+
+
+            let filtro =''
+
+            for(let chave in this.busca) {
+                if(this.busca[chave]) {
+                   if(filtro != '') {
+                       filtro +=";"
+                   }
+                   filtro += chave + ':like:' + this.busca[chave]
+                }
+            }
+            if(filtro != '') {
+                this.urlPaginacao = 'page1'
+                this.urlFiltro = '&filtro='+filtro
+            } else {
+                this.urlFiltro =''
+            }
+            this.carregarLista()
+        },
+        paginacao(l) {
+            if(l.url) {
+              //  this.urlBase = l.url //ajustando a url de consulta com o parametro de pagina
+              this.urlPaginacao = l.url.split('?')[1]
+                this.carregarLista() //requisitando novamente os dados para nossa api
+            }
+        },
         carregarLista() {
 
             let config = {
@@ -119,11 +189,12 @@ export default {
                 }
             }
 
+            let url = this.urlBase + '?' + this.urlPaginacao + this.urlFiltro
+            console.log(url)
 
-            axios.get(this.urlBase)
+            axios.get(url)
                 .then(response => {
                     this.marcas = response.data
-                    //console.log(this.marcas)
                 })
                 .catch(errors => {
                     console.log(errors);
